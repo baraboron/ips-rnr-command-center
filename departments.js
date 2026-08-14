@@ -112,11 +112,14 @@
     return `<section class="view">${heading('조직도·부서 배분','ORG WORK ALLOCATION',`${esc(scope.label||'전체')} 기준 조직 구조와 부서 배분 현황을 확인합니다.`)}<div class="metric-grid"><div class="metric-card"><div class="metric-top"><span>조회 부서</span></div><div class="metric-value">${visibleDepartments.length}<em>개</em></div></div><div class="metric-card"><div class="metric-top"><span>부서 배분 대기</span></div><div class="metric-value">${pending.length}<em>건</em></div></div><div class="metric-card"><div class="metric-top"><span>배분 완료</span></div><div class="metric-value">${Math.max(0,(scope.tasks||[]).length-pending.length)}<em>건</em></div></div></div><div class="org-layout"><div class="panel"><div class="panel-header"><div><div class="panel-title">조직 구조</div><div class="panel-desc">${esc(scope.label||'전체')} 소속 부서·구성원</div></div></div><div class="org-tree">${scopedTree(groupOnly?[...memberIds][0]:null)}</div></div><div class="panel"><div class="panel-header"><div><div class="panel-title">부서 배분 대기 업무</div><div class="panel-desc">조회 범위 내 업무만 표시합니다.</div></div></div><div class="department-task-list">${pending.map(t=>`<div class="department-task-row"><div><strong>${esc(t.title)}</strong><small>${t.due||'기한 미지정'}</small></div><span>${t.targetDepartmentId?esc(path(t.targetDepartmentId)):'부서 미배정'}</span></div>`).join('')||'<div class="empty">부서 배분 대기 업무가 없습니다.</div>'}</div></div></div><div class="panel"><div class="panel-header"><div><div class="panel-title">부서별 업무부하</div><div class="panel-desc">조회 범위 내 부서만 표시합니다.</div></div></div><div class="department-load-grid">${deptRows.map(d=>{const v=load(d.id),tone=v>=80?'high':v>=60?'mid':'ok';return `<div class="department-load-card"><span class="org-type">${d.type}</span><strong>${esc(d.name)}</strong><small>${esc(path(d.id))}</small><div class="load-bar"><span class="${tone}" style="width:${Math.min(v,100)}%"></span></div><b>${v}%</b></div>`}).join('')}</div></div></section>`;
   }
   function collaborationTasks(info,baseTasks){
-    if(!['team','group'].includes(info.role)||!info.leader)return [];
-    const orgs=info.role==='team'?descendants(info.leader.id):[info.leader];
+    const member=currentUserName(),currentMember=data.members.find(item=>item.name===member);
+    if(info.role==='member'&&!currentMember)return [];
+    if(!['team','group','member'].includes(info.role))return [];
+    const orgs=info.role==='team'?descendants(info.leader.id):info.role==='group'?[info.leader]:[dept(currentMember.departmentId)];
     const names=new Set(orgs.flatMap(item=>[item.name,...path(item.id).split(' > ')]));
-    const baseIds=new Set(baseTasks.map(task=>task.id));
-    return data.tasks.filter(task=>!baseIds.has(task.id)&&(task.collaborators||[]).some(value=>[...names].some(name=>String(value).trim()===name||String(value).includes(name))));
+    const baseIds=new Set(info.role==='member'?[]:baseTasks.map(task=>task.id));
+    const source=info.role==='member'?baseTasks:data.tasks;
+    return source.filter(task=>!baseIds.has(task.id)&&(task.collaborators||[]).some(value=>[...names].some(name=>String(value).trim()===name||String(value).includes(name))));
   }
   function collaborationTaskPanel(info,baseTasks){
     const tasks=collaborationTasks(info,baseTasks);if(!tasks.length)return '';
@@ -124,13 +127,14 @@
   }
   const baseRoleTasksView=roleTasksView;
   roleTasksView=function(){const info=leaderRole(),baseTasks=scopedTasks(),html=baseRoleTasksView();return html.replace('</section>',collaborationTaskPanel(info,baseTasks)+'</section>')};
+  function collaborationTasksView(){const info=leaderRole(),baseTasks=scopedTasks(),tasks=collaborationTasks(info,baseTasks);return `<section class="view collaboration-view">${heading('협업요청업무','COLLABORATION REQUESTS',info.role==='team'?`${info.leader.name} 팀과 하위 그룹이 협업부서로 지정된 업무입니다.`:info.role==='group'?`${info.leader.name} 그룹과 상위 팀이 협업부서로 지정된 업무입니다.`:'내 담당 업무 중 협업부서로 지정된 업무입니다.')}<div class="board-summary"><strong>${tasks.length}개 업무</strong><span>협업부서 지정 업무만 별도 표시</span></div><div class="panel collaboration-work-panel"><div class="task-grid collaboration-task-grid">${tasks.map(taskCard).join('')||'<div class="empty">협업요청으로 지정된 업무가 없습니다.</div>'}</div></div></section>`}
   org=scopedOrg;
   const roleOpenTaskForm=window.openTaskForm;
   window.openTaskForm=function(){roleOpenTaskForm();applyDayDurationInputs()};
   window.departmentAssign=assign;window.openDepartmentAssign=assignModal;
   window.go=function(v){current=v;window.render();window.scrollTo({top:0,behavior:'smooth'})};
   const oldRender=render;
-  window.render=function(){ensure();const originalCurrent=current;const views={dashboard,tasks:roleTasksView,team,org,records,admin};let html=(views[originalCurrent]||dashboard)();if(originalCurrent==='dashboard'){html=html.replace('<section class="view dashboard-view">','<section class="view dashboard-view">'+dashboardOrgBanner());html=html.replace('</section>',dashboardExtras()+leaderSummary()+leaderSatisfactionPanel()+'</section>')}if(originalCurrent==='admin')html=html.replace('</section>',adminExtras()+'</section>');$('#app').innerHTML=html;$('#pageTitle').textContent={dashboard:'현황판',tasks:'업무 항목',team:'팀원 프로필',org:'조직도·부서 배분',records:'KPI 현황',admin:'관리자'}[originalCurrent]||'현황판';document.querySelectorAll('.nav-item').forEach(x=>x.classList.toggle('active',x.dataset.view===originalCurrent));const count=$('#navTaskCount');if(count)count.textContent=data.tasks.filter(t=>['assigned','in_progress','blocked'].includes(t.status)).length;bindForms();bindTaskFilters();bindShellActions()};
+  window.render=function(){ensure();const originalCurrent=current;const views={dashboard,tasks:roleTasksView,collaboration:collaborationTasksView,team,org,records,admin};let html=(views[originalCurrent]||dashboard)();if(originalCurrent==='dashboard'){html=html.replace('<section class="view dashboard-view">','<section class="view dashboard-view">'+dashboardOrgBanner());html=html.replace('</section>',dashboardExtras()+leaderSummary()+leaderSatisfactionPanel()+'</section>')}if(originalCurrent==='admin')html=html.replace('</section>',adminExtras()+'</section>');$('#app').innerHTML=html;$('#pageTitle').textContent={dashboard:'현황판',tasks:'업무 항목',collaboration:'협업요청업무',team:'팀원 프로필',org:'조직도·부서 배분',records:'KPI 현황',admin:'관리자'}[originalCurrent]||'현황판';document.querySelectorAll('.nav-item').forEach(x=>x.classList.toggle('active',x.dataset.view===originalCurrent));const count=$('#navTaskCount');if(count)count.textContent=data.tasks.filter(t=>['assigned','in_progress','blocked'].includes(t.status)).length;bindForms();bindTaskFilters();bindShellActions()};
   const baseRenderWithPhotos=window.render;
 window.render=function(){baseRenderWithPhotos();decorateMemberPhotos();if(typeof decorateDurationDisplays==='function')decorateDurationDisplays();if(typeof hideMemberAssignmentControls==='function')hideMemberAssignmentControls()};
   ensure();save();window.render();
