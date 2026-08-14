@@ -6,7 +6,8 @@
 (function(){
   const SESSION_KEY='rr-auth-session';
   const ROLE_LABELS={admin:'시스템 관리자',leader:'팀장',member:'팀원'};
-  const ROLE_BY_MEMBER_ID={1:'admin',3:'leader'};
+  // 인사팀장만 팀장 권한을 가지며, 그룹 책임자는 그룹장 업무 범위로 처리한다.
+  const ROLE_BY_MEMBER_ID={1:'leader'};
   const authProvider={
     async signIn(memberId){
       const member=data.members.find(m=>String(m.id)===String(memberId));
