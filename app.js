@@ -495,7 +495,7 @@ filteredTasks=function(){return data.tasks.filter(taskFilterMatches).sort(taskFi
 clearTaskFilters=function(){taskQuery='';taskStatus='all';taskOwner='all';taskSort='due';taskTypeFilter='all';taskDueFilter='all';taskLoadFilter='all';render()};
 
 function setupRoleTaskFilters(){
-  const view=[...document.querySelectorAll('.view')].find(node=>node.querySelector('.eyebrow')?.textContent.trim()==='ROLE WORKSPACE');
+  const view=[...document.querySelectorAll('.view')].find(node=>node.querySelector('.board-summary')&&node.querySelector('.task-grid'));
   const grid=view?.querySelector('.task-grid');if(!view||!grid||view.dataset.filterPipelineBound)return;
   view.dataset.filterPipelineBound='true';
   const panel=view.querySelector('.task-filter-explorer')||document.createElement('section');panel.className='task-filter-explorer task-filter-pipeline';
