@@ -286,12 +286,21 @@ openTaskDetail=function(taskId){baseOpenTaskDetail(taskId);enhanceTaskDetailWith
 
 const baseOpenAssignModal=openAssignModal;
 openAssignModal=function(taskId){
+  if(!canManageAssignments())return toast('팀장 또는 그룹장만 담당자를 조정할 수 있습니다.');
   baseOpenAssignModal(taskId);
   const form=document.querySelector('#manualAssignForm');if(!form)return;
   const labels=[...form.querySelectorAll('.assign-candidate')];
   labels.forEach((label,index)=>{const checkbox=label.querySelector('input[name="assigneeChoice"]');if(!checkbox)return;const select=document.createElement('select');select.className='assignee-priority';select.name='assigneePriority';select.dataset.name=checkbox.value;for(let n=1;n<=labels.length;n++){const option=document.createElement('option');option.value=n;option.textContent=`우선순위 ${n}`;if(n===index+1)option.selected=true;select.appendChild(option)}label.appendChild(select)});
   form.addEventListener('submit',event=>{event.preventDefault();event.stopImmediatePropagation();const selected=[...form.querySelectorAll('input[name="assigneeChoice"]:checked')];if(!selected.length)return toast('담당자를 한 명 이상 선택해주세요.');const names=selected.map(input=>({name:input.value,priority:Number([...form.querySelectorAll('select[name="assigneePriority"]')].find(select=>select.dataset.name===input.value)?.value)||999})).sort((a,b)=>a.priority-b.priority||a.name.localeCompare(b.name)).map(item=>item.name);confirmAssignTask(taskId,names)},true);
 }
+
+function canManageAssignments(){return ['admin','leader','groupLeader'].includes(data.currentUserRole)}
+function hideMemberAssignmentControls(){
+  if(canManageAssignments())return;
+  document.querySelectorAll('.assign-actions,.manual-assign-btn').forEach(node=>node.remove());
+}
+const baseConfirmAssignTask=confirmAssignTask;
+confirmAssignTask=function(taskId,names){if(!canManageAssignments())return toast('팀장 또는 그룹장만 담당자를 조정할 수 있습니다.');return baseConfirmAssignTask(taskId,names)};
 
 const MEMBER_PHOTOS={1:'https://randomuser.me/api/portraits/women/44.jpg',2:'https://randomuser.me/api/portraits/women/65.jpg',3:'https://randomuser.me/api/portraits/men/32.jpg',4:'https://randomuser.me/api/portraits/women/68.jpg',5:'https://randomuser.me/api/portraits/women/21.jpg',6:'https://randomuser.me/api/portraits/men/75.jpg'};
 function memberPhotoUrl(member){return member?.photoUrl||MEMBER_PHOTOS[member?.id]||`https://randomuser.me/api/portraits/lego/${(Number(member?.id)||1)%10}.jpg`}
