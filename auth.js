@@ -31,7 +31,7 @@
   function ensureLayer(){
     if(document.querySelector('.auth-layer'))return;
     const layer=document.createElement('div');layer.className='auth-layer';layer.id='authLayer';layer.hidden=true;
-    layer.innerHTML=`<section class="auth-card" aria-labelledby="authTitle"><div class="auth-brand"><span class="auth-brand-mark">R</span><div><strong>R&R 정리판</strong><small>교육 대표 · 업무 현황판</small></div></div><p class="auth-eyebrow">LOCAL ACCESS</p><h1 id="authTitle">누구로 시작할까요?</h1><p class="auth-description">60일 검증 기간 동안은 사용자 선택으로 접속합니다. 선택한 권한에 맞는 업무 화면이 표시됩니다.</p><form id="authForm"><div class="auth-field"><label for="authMember">사용자</label><select id="authMember" name="memberId" required></select></div><button class="auth-submit" type="submit">업무 화면 시작</button></form><p class="auth-note">향후 회사 SSO 연동 시 이 화면의 인증 방식만 교체하고 업무 권한·화면 구조는 그대로 사용합니다.</p></section>`;
+    layer.innerHTML=`<section class="auth-card" aria-labelledby="authTitle"><div class="auth-brand"><span class="auth-brand-mark">W</span><div><strong>WONIK IPS</strong><small>업무 현황판</small></div></div><p class="auth-eyebrow">LOCAL ACCESS</p><h1 id="authTitle">누구로 시작할까요?</h1><p class="auth-description">60일 검증 기간 동안은 사용자 선택으로 접속합니다. 선택한 권한에 맞는 업무 화면이 표시됩니다.</p><form id="authForm"><div class="auth-field"><label for="authMember">사용자</label><select id="authMember" name="memberId" required></select></div><button class="auth-submit" type="submit">업무 화면 시작</button></form><p class="auth-note">향후 회사 SSO 연동 시 이 화면의 인증 방식만 교체하고 업무 권한·화면 구조는 그대로 사용합니다.</p></section>`;
     document.body.appendChild(layer);
     const select=layer.querySelector('#authMember');
     data.members.forEach(member=>{const option=document.createElement('option');option.value=member.id;option.textContent=`${member.name} · ${roleLabel(memberRole(member.id))}`;select.appendChild(option)});
@@ -47,8 +47,8 @@
     applyRoleNavigation(next.role);updateUserChrome(next);window.render();
   }
   function applyRoleNavigation(role){
-    document.querySelectorAll('.nav-item').forEach(item=>{const view=item.dataset.view;const leaderRole=role==='leader'||role==='groupLeader';const allowed=role==='admin'||(leaderRole?view!=='admin':!['admin','org'].includes(view));item.hidden=!allowed});
-    if(role!=='admin'&&current==='admin')window.go('dashboard');
+    document.querySelectorAll('.nav-item').forEach(item=>{const view=item.dataset.view;const leaderRole=role==='leader'||role==='groupLeader';const allowed=role==='admin'||(leaderRole?view!=='admin':!['admin','org','records'].includes(view));item.hidden=!allowed});
+    if(role!=='admin'&&['admin','records'].includes(current))window.go('dashboard');
   }
   function updateUserChrome(current){
     const actions=document.querySelector('.top-actions');if(!actions)return;
