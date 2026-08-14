@@ -369,11 +369,11 @@ const baseDurationTaskDetail=openTaskDetail;
 openTaskDetail=function(taskId){baseDurationTaskDetail(taskId);decorateDurationDisplays()};
 
 function enhanceMemberSearch(){
-  document.querySelectorAll('#roleTaskForm select[name="assignmentTarget"]').forEach(select=>{
+  document.querySelectorAll('#roleTaskForm select[name="assignmentTarget"],#authForm select[name="memberId"]').forEach(select=>{
     if(select.dataset.searchBound)return;
     select.dataset.searchBound='true';
     const wrap=document.createElement('div');wrap.className='member-search-wrap';
-    const input=document.createElement('input');input.type='search';input.className='member-search-input';input.placeholder='이름 또는 직급으로 검색';input.autocomplete='off';input.required=select.required;
+    const input=document.createElement('input');input.type='search';input.className='member-search-input';input.placeholder=select.name==='memberId'?'사용자 이름 또는 권한으로 검색':'이름 또는 직급으로 검색';input.autocomplete='off';input.required=select.required;input.value=select.value?select.options[select.selectedIndex]?.textContent||'':'';
     const results=document.createElement('div');results.className='member-search-results';
     select.required=false;select.hidden=true;select.parentNode.insertBefore(wrap,select);wrap.append(input,results);
     const options=[...select.options].filter(option=>option.value);
