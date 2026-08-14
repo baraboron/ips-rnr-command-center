@@ -308,7 +308,7 @@ function applyDayDurationInputs(){
     const field=input.closest('.field'),label=field?.querySelector('label');
     if(label)label.firstChild.textContent='예상 소요일';
     input.min='0.5';input.step='0.5';input.value=(Number(input.value)||8)/8;
-    if(!field?.querySelector('.duration-help')){const help=document.createElement('small');help.className='field-help duration-help';help.textContent='1일 = 8시간 기준';field?.appendChild(help)}
+    if(!field?.querySelector('.duration-help')){const help=document.createElement('small');help.className='field-help duration-help';help.textContent='입력 단위: Day';field?.appendChild(help)}
     if(input.dataset.dayDurationBound)return;
     input.dataset.dayDurationBound='true';
     input.form?.addEventListener('submit',()=>{input.value=(Number(input.value)||1)*8},true);
@@ -358,3 +358,13 @@ function autoKpiDetailRows(metrics){return AUTO_KPI_DEFINITIONS.map(def=>{const 
 records=function(){const metrics=autoKpiMetrics();const highlights=AUTO_KPI_DEFINITIONS.slice(0,6);return `<section class="view"><div class="view-heading"><div><p class="eyebrow">AUTO KPI CONTROL CENTER</p><h1>KPI 현황</h1><p class="subtitle">업무 등록·배정·진행·완료·만족도 데이터를 기준으로 자동 산출됩니다. 별도 KPI 입력이 필요하지 않습니다.</p></div><button class="btn secondary" onclick="downloadCSV()">자동 산출 CSV</button></div><div class="primary-kpi-grid">${highlights.map(def=>{const value=metrics[def.key],status=autoKpiStatus(def,value),tone=status==='목표 달성'?'hit':status==='관리 필요'?'active':'pending';return `<article class="primary-kpi-card ${tone}"><div class="primary-kpi-head"><span>${def.name}</span><b>${status}</b></div><div class="primary-kpi-value">${autoKpiDisplay(value,def.unit)}</div><div class="primary-kpi-target">기준 ${def.direction==='low'?'≤':'≥'} ${def.target}${def.unit} · ${def.desc}</div><div class="primary-progress"><span style="width:${Math.min(100,def.direction==='low'?Math.max(0,100-value/Math.max(def.target,1)*100):value/Math.max(def.target,1)*100)}%"></span></div></article>`}).join('')}</div><div class="panel auto-kpi-panel"><div class="panel-header"><div><div class="panel-title">세부 자동 산출 항목</div><div class="panel-desc">현재 저장된 원천 데이터에서 실시간으로 다시 계산합니다. 전체 ${metrics.total}건 · 완료 ${metrics.doneCount}건 · 만족도 응답 ${metrics.responseCount}건 · 피드백 ${metrics.feedbackCount}건</div></div><span class="panel-pill">LIVE CALCULATION</span></div><div class="auto-kpi-list">${autoKpiDetailRows(metrics)}</div></div></section>`}
 downloadCSV=function(){const metrics=autoKpiMetrics(),rows=[['KPI 항목','자동 산출값','단위','기준','설명'],...AUTO_KPI_DEFINITIONS.map(def=>[def.name,metrics[def.key],def.unit,`${def.direction==='low'?'≤':'≥'} ${def.target}`,def.desc])];const csv='\ufeff'+rows.map(row=>row.map(value=>'"'+String(value).replaceAll('"','""')+'"').join(',')).join('\n');const anchor=document.createElement('a');anchor.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));anchor.download='auto-kpi-metrics.csv';anchor.click();toast('자동 산출 KPI CSV를 다운로드합니다.');}
 if(typeof render==='function')render();
+
+function durationDayValue(hours){const days=(Number(hours)||0)/8;return Number.isInteger(days)?String(days):days.toFixed(1).replace(/\.0$/,'')}
+function decorateDurationDisplays(){
+  document.querySelectorAll('.priority,.detail-hours strong').forEach(node=>{node.textContent=node.textContent.replace(/(\d+(?:\.\d+)?)h\b/g,(_,hours)=>`${durationDayValue(hours)} Day`)})
+}
+const baseDurationRender=render;
+render=function(){baseDurationRender();decorateDurationDisplays()};
+const baseDurationTaskDetail=openTaskDetail;
+openTaskDetail=function(taskId){baseDurationTaskDetail(taskId);decorateDurationDisplays()};
+render();
