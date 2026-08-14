@@ -389,8 +389,9 @@ function durationDayValue(hours){const days=(Number(hours)||0)/8;return Number.i
 function decorateDurationDisplays(){
   document.querySelectorAll('.priority,.detail-hours strong').forEach(node=>{node.textContent=node.textContent.replace(/(\d+(?:\.\d+)?)h\b/g,(_,hours)=>`${durationDayValue(hours)} Day`)})
 }
+function decorateTaskDifficultyDisplays(){document.querySelectorAll('.task-tile').forEach(tile=>{const title=tile.querySelector('h3')?.textContent.trim(),task=data.tasks.find(item=>item.title===title),priority=tile.querySelector('.priority');if(!task||!priority)return;const difficulty=normalizeDifficulty(task.difficulty);if(!priority.dataset.difficultyDecorated){priority.textContent=`${difficulty} · ${priority.textContent}`;priority.dataset.difficultyDecorated='true'}})}
 const baseDurationRender=render;
-render=function(){baseDurationRender();decorateDurationDisplays()};
+render=function(){baseDurationRender();decorateDurationDisplays();decorateTaskDifficultyDisplays()};
 const baseDurationTaskDetail=openTaskDetail;
 openTaskDetail=function(taskId){baseDurationTaskDetail(taskId);decorateDurationDisplays()};
 
