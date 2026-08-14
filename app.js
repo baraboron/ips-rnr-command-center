@@ -281,6 +281,15 @@ openAssignModal=function(taskId){
   form.addEventListener('submit',event=>{event.preventDefault();event.stopImmediatePropagation();const selected=[...form.querySelectorAll('input[name="assigneeChoice"]:checked')];if(!selected.length)return toast('담당자를 한 명 이상 선택해주세요.');const names=selected.map(input=>({name:input.value,priority:Number([...form.querySelectorAll('select[name="assigneePriority"]')].find(select=>select.dataset.name===input.value)?.value)||999})).sort((a,b)=>a.priority-b.priority||a.name.localeCompare(b.name)).map(item=>item.name);confirmAssignTask(taskId,names)},true);
 }
 
+function memberPhotoUrl(member){return member?.photoUrl||`https://i.pravatar.cc/120?img=${(Number(member?.id)||1)%70+1}`}
+function decorateMemberPhotos(){
+  document.querySelectorAll('.member-card').forEach(card=>{
+    const name=card.querySelector('h3')?.textContent.trim(),member=data.members.find(item=>item.name===name),avatar=card.querySelector('.profile-avatar.small');
+    if(!member||!avatar||avatar.querySelector('img'))return;
+    const image=document.createElement('img');image.src=memberPhotoUrl(member);image.alt=`${member.name} 프로필 사진`;image.loading='lazy';avatar.textContent='';avatar.appendChild(image);
+  });
+}
+
 function applyDayDurationInputs(){
   document.querySelectorAll('input[name="hours"]').forEach(input=>{
     const field=input.closest('.field'),label=field?.querySelector('label');
