@@ -9,7 +9,7 @@
   function api(action,input){return fetch('/api/ai',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,input})}).then(async r=>{const body=await r.json();if(!r.ok)throw new Error(body.error||'AI 요청에 실패했습니다.');return body})}
   function ensureLauncher(){
     const actions=$('.top-actions');if(!actions||$('.ai-launcher'))return;
-    const button=document.createElement('button');button.className='ai-launcher visible';button.type='button';button.innerHTML='✦ AI 도우미';button.addEventListener('click',()=>openAiModal());actions.prepend(button);
+    const button=document.createElement('button');button.className='ai-launcher visible';button.type='button';button.innerHTML='✦ AI 도우미';button.onclick=()=>openAiModal();actions.prepend(button);
   }
   function ensureModal(){
     if($('.ai-modal'))return;
