@@ -47,7 +47,7 @@
     applyRoleNavigation(next.role);updateUserChrome(next);window.render();
   }
   function applyRoleNavigation(role){
-    document.querySelectorAll('.nav-item').forEach(item=>{const view=item.dataset.view;const leaderRole=role==='leader'||role==='groupLeader';const allowed=role==='admin'||(leaderRole?view!=='admin':!['admin','org','records'].includes(view));item.hidden=!allowed});
+    document.querySelectorAll('.nav-item').forEach(item=>{const view=item.dataset.view;const leaderRole=role==='leader'||role==='groupLeader';const allowed=role==='admin'||(leaderRole?view!=='admin':!['admin','records'].includes(view));item.hidden=!allowed});
     if(role!=='admin'&&['admin','records'].includes(current))window.go('dashboard');
   }
   function updateUserChrome(current){
