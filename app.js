@@ -302,6 +302,10 @@ openAssignModal=function(taskId){
   if(!canManageAssignments())return toast('팀장 또는 그룹장만 담당자를 조정할 수 있습니다.');
   baseOpenAssignModal(taskId);
   const form=document.querySelector('#manualAssignForm');if(!form)return;
+  const task=data.tasks.find(item=>item.id===taskId),multi=!!task&&isMultiTask(task);
+  form.dataset.assignmentMode=multi?'multi':'single';
+  form.querySelectorAll('input[name="assigneeChoice"]').forEach(input=>{input.type=multi?'checkbox':'radio'});
+  const modeNote=form.querySelector('.assignment-mode-note span');if(modeNote)modeNote.textContent=multi?'첫 번째 선택 인원이 주담당자가 됩니다.':'단독 담당 업무는 한 명만 선택할 수 있습니다.';
   const labels=[...form.querySelectorAll('.assign-candidate')];
   labels.forEach((label,index)=>{const checkbox=label.querySelector('input[name="assigneeChoice"]');if(!checkbox)return;const select=document.createElement('select');select.className='assignee-priority';select.name='assigneePriority';select.dataset.name=checkbox.value;for(let n=1;n<=labels.length;n++){const option=document.createElement('option');option.value=n;option.textContent=`우선순위 ${n}`;if(n===index+1)option.selected=true;select.appendChild(option)}label.appendChild(select)});
   form.addEventListener('submit',event=>{event.preventDefault();event.stopImmediatePropagation();const selected=[...form.querySelectorAll('input[name="assigneeChoice"]:checked')];if(!selected.length)return toast('담당자를 한 명 이상 선택해주세요.');const names=selected.map(input=>({name:input.value,priority:Number([...form.querySelectorAll('select[name="assigneePriority"]')].find(select=>select.dataset.name===input.value)?.value)||999})).sort((a,b)=>a.priority-b.priority||a.name.localeCompare(b.name)).map(item=>item.name);confirmAssignTask(taskId,names)},true);
