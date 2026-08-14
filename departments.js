@@ -112,6 +112,6 @@
   const oldRender=render;
   window.render=function(){ensure();const originalCurrent=current;const views={dashboard,tasks:roleTasksView,team,org,records,admin};let html=(views[originalCurrent]||dashboard)();if(originalCurrent==='dashboard'){html=html.replace('<section class="view dashboard-view">','<section class="view dashboard-view">'+dashboardOrgBanner());html=html.replace('</section>',dashboardExtras()+leaderSummary()+leaderSatisfactionPanel()+'</section>')}if(originalCurrent==='admin')html=html.replace('</section>',adminExtras()+'</section>');$('#app').innerHTML=html;$('#pageTitle').textContent={dashboard:'현황판',tasks:'업무 항목',team:'팀원 프로필',org:'조직도·부서 배분',records:'KPI 현황',admin:'관리자'}[originalCurrent]||'현황판';document.querySelectorAll('.nav-item').forEach(x=>x.classList.toggle('active',x.dataset.view===originalCurrent));const count=$('#navTaskCount');if(count)count.textContent=data.tasks.filter(t=>['assigned','in_progress','blocked'].includes(t.status)).length;bindForms();bindTaskFilters();bindShellActions()};
   const baseRenderWithPhotos=window.render;
-  window.render=function(){baseRenderWithPhotos();decorateMemberPhotos()};
+window.render=function(){baseRenderWithPhotos();decorateMemberPhotos();if(typeof decorateDurationDisplays==='function')decorateDurationDisplays()};
   ensure();save();window.render();
 })();
