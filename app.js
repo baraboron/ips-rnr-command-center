@@ -281,6 +281,18 @@ openAssignModal=function(taskId){
   form.addEventListener('submit',event=>{event.preventDefault();event.stopImmediatePropagation();const selected=[...form.querySelectorAll('input[name="assigneeChoice"]:checked')];if(!selected.length)return toast('담당자를 한 명 이상 선택해주세요.');const names=selected.map(input=>({name:input.value,priority:Number([...form.querySelectorAll('select[name="assigneePriority"]')].find(select=>select.dataset.name===input.value)?.value)||999})).sort((a,b)=>a.priority-b.priority||a.name.localeCompare(b.name)).map(item=>item.name);confirmAssignTask(taskId,names)},true);
 }
 
+function applyDayDurationInputs(){
+  document.querySelectorAll('input[name="hours"]').forEach(input=>{
+    const field=input.closest('.field'),label=field?.querySelector('label');
+    if(label)label.firstChild.textContent='예상 소요일';
+    input.min='0.5';input.step='0.5';input.value=(Number(input.value)||8)/8;
+    if(!field?.querySelector('.duration-help')){const help=document.createElement('small');help.className='field-help duration-help';help.textContent='1일 = 8시간 기준';field?.appendChild(help)}
+    if(input.dataset.dayDurationBound)return;
+    input.dataset.dayDurationBound='true';
+    input.form?.addEventListener('submit',()=>{input.value=(Number(input.value)||1)*8},true);
+  });
+}
+
 team=scopedTeam;
 dashboard=scopedCompactDashboard;
 dashboardExtras=function(){return '';};
