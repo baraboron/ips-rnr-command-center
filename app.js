@@ -282,7 +282,8 @@ openAssignModal=function(taskId){
   form.addEventListener('submit',event=>{event.preventDefault();event.stopImmediatePropagation();const selected=[...form.querySelectorAll('input[name="assigneeChoice"]:checked')];if(!selected.length)return toast('담당자를 한 명 이상 선택해주세요.');const names=selected.map(input=>({name:input.value,priority:Number([...form.querySelectorAll('select[name="assigneePriority"]')].find(select=>select.dataset.name===input.value)?.value)||999})).sort((a,b)=>a.priority-b.priority||a.name.localeCompare(b.name)).map(item=>item.name);confirmAssignTask(taskId,names)},true);
 }
 
-function memberPhotoUrl(member){return member?.photoUrl||`https://i.pravatar.cc/120?img=${(Number(member?.id)||1)%70+1}`}
+const MEMBER_PHOTOS={1:'https://randomuser.me/api/portraits/women/44.jpg',2:'https://randomuser.me/api/portraits/women/65.jpg',3:'https://randomuser.me/api/portraits/men/32.jpg',4:'https://randomuser.me/api/portraits/women/68.jpg',5:'https://randomuser.me/api/portraits/women/21.jpg',6:'https://randomuser.me/api/portraits/men/75.jpg'};
+function memberPhotoUrl(member){return member?.photoUrl||MEMBER_PHOTOS[member?.id]||`https://randomuser.me/api/portraits/lego/${(Number(member?.id)||1)%10}.jpg`}
 function decorateMemberPhotos(){
   document.querySelectorAll('.member-card').forEach(card=>{
     const name=card.querySelector('h3')?.textContent.trim(),member=data.members.find(item=>item.name===name),avatar=card.querySelector('.profile-avatar.small');
