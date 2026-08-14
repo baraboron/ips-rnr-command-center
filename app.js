@@ -451,6 +451,9 @@ if(!document.getElementById('taskGovernanceStyles')){const style=document.create
 const taskGovernanceObserver=new MutationObserver(decorateTaskGovernanceUI);taskGovernanceObserver.observe(document.body,{childList:true,subtree:true});decorateTaskGovernanceUI();
 function bindReliableNavigation(){document.querySelectorAll('.nav-item').forEach(item=>{if(item.dataset.reliableNavBound)return;item.dataset.reliableNavBound='true';item.hidden=item.dataset.view==='tasks'?false:item.hidden;item.onclick=()=>{const view=item.dataset.view;if(typeof window.go==='function')window.go(view);else go(view)}})}
 const reliableNavigationObserver=new MutationObserver(bindReliableNavigation);reliableNavigationObserver.observe(document.body,{childList:true,subtree:true});bindReliableNavigation();
+function currentUserVisibleTasks(){const scoped=typeof window.getDashboardTaskScope==='function'?window.getDashboardTaskScope():null;if(scoped?.tasks)return scoped.tasks;const user=typeof currentUserName==='function'?currentUserName():data.currentUser;return data.tasks.filter(task=>taskAssigneeNames(task).includes(user)||task.createdBy===user)}
+function syncTaskNavCount(){const node=document.querySelector('#navTaskCount');if(!node)return;const count=currentUserVisibleTasks().filter(task=>['unassigned','in_progress','blocked'].includes(task.status)).length;if(node.textContent!==String(count))node.textContent=String(count);node.title='배정 전·진행 중·막힘 업무'}
+const taskNavCountObserver=new MutationObserver(syncTaskNavCount);taskNavCountObserver.observe(document.body,{childList:true,subtree:true});syncTaskNavCount();
 
 // 로그인 사용자 기준 프로필과 기간별 업무부하 조회
 function profileMember(){const name=typeof currentUserName==='function'?currentUserName():data.currentUser;return data.members.find(member=>member.name===name)||data.members[0]}
