@@ -33,6 +33,7 @@ const GRADE_DEFAULTS={
   '팀장':{types:['교육 운영','노사·협의체','진단·평가','조직문화','기획·프로젝트','고객·문의 대응'],skills:['교육기획','노사관계','진단운영','리더십','조직문화','프로젝트관리','협업','고객대응'],experience:8,maxWorkload:80,capacityHours:16,availability:1}
 };
 let data=JSON.parse(localStorage.getItem('rr-board-data')||'null')||JSON.parse(JSON.stringify(seed));
+window.RR_APP={getData:()=>data,setData:next=>{data=next}};
 // 이전 목업 데이터가 브라우저에 남아 있어도 새 기능이 깨지지 않도록 기본 구조를 보완한다.
 data.members=Array.isArray(data.members)&&data.members.length?data.members:JSON.parse(JSON.stringify(seed.members));
 data.entries=Array.isArray(data.entries)?data.entries:[];
@@ -46,8 +47,8 @@ let current='dashboard';
 let taskQuery='',taskStatus='all',taskOwner='all',taskSort='due';
 const $=s=>document.querySelector(s); const esc=s=>String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
 const today='2026-08-13';
-async function cloudRequest(table,method='POST',payload=null,query=''){if(!SUPABASE_URL||!SUPABASE_ANON_KEY)return;try{await fetch(`${SUPABASE_URL}/rest/v1/${table}${query}`,{method,headers:{apikey:SUPABASE_ANON_KEY,Authorization:`Bearer ${SUPABASE_ANON_KEY}`,'Content-Type':'application/json',Prefer:'return=minimal'},body:payload?JSON.stringify(payload):undefined})}catch(e){console.warn('Supabase sync skipped',e)}}
-function save(){localStorage.setItem('rr-board-data',JSON.stringify(data));}
+async function cloudRequest(table,method='POST',payload=null,query=''){const url=SUPABASE_URL||window.RR_SUPABASE_URL||'';const key=SUPABASE_ANON_KEY||window.RR_SUPABASE_ANON_KEY||'';if(!url||!key)return;const response=await fetch(`${url}/rest/v1/${table}${query}`,{method,headers:{apikey:key,Authorization:`Bearer ${key}`,'Content-Type':'application/json',Prefer:'return=minimal'},body:payload?JSON.stringify(payload):undefined});if(!response.ok)throw new Error(`Supabase ${response.status}`);return response}
+function save(){localStorage.setItem('rr-board-data',JSON.stringify(data));window.RR_SUPABASE_SYNC?.schedule(data);}
 function toast(msg){const e=$('#toast');e.textContent=msg;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2300)}
 function heading(title,eyebrow,subtitle,action=''){return `<div class="view-heading"><div><p class="eyebrow">${eyebrow}</p><h1>${title}</h1><p class="subtitle">${subtitle}</p></div>${action}</div>`}
 function workload(name){return data.members.find(m=>m.name===name)?.workload||0}
