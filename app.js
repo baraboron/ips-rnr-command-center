@@ -91,6 +91,17 @@ function tasks(){const list=filteredTasks();return `<section class="view">${head
 const TASK_TYPES=['교육 운영','노사·협의체','진단·평가','조직문화','기획·프로젝트','고객·문의 대응'];
 const TASK_LEVELS=['사원','선임','책임','팀장'];
 const SKILL_LIBRARY=['교육기획','교육운영','입문교육','노사관계','진단운영','리더십','조직문화','콘텐츠','협업','고객대응','데이터분석','프로젝트관리'];
+const TASK_TYPE_PRESETS={
+  '교육 운영':{difficulty:'선임',level:'선임',experience:2,hours:8,skills:['교육운영','교육기획']},
+  '노사·협의체':{difficulty:'책임',level:'책임',experience:4,hours:12,skills:['노사관계','협업']},
+  '진단·평가':{difficulty:'책임',level:'책임',experience:4,hours:12,skills:['진단운영']},
+  '조직문화':{difficulty:'선임',level:'선임',experience:3,hours:10,skills:['조직문화','교육기획']},
+  '기획·프로젝트':{difficulty:'책임',level:'책임',experience:4,hours:16,skills:['교육기획','협업']},
+  '고객·문의 대응':{difficulty:'사원',level:'사원',experience:1,hours:4,skills:['협업']}
+};
+function applyTaskTypePreset(form,type){const preset=TASK_TYPE_PRESETS[type];if(!preset)return;if(form.elements.difficulty)form.elements.difficulty.value=preset.difficulty;if(form.elements.level)form.elements.level.value=preset.level;if(form.elements.experience)form.elements.experience.value=preset.experience;if(form.elements.hours)form.elements.hours.value=preset.hours;form.querySelectorAll('input[name="skills"]').forEach(input=>{input.checked=preset.skills.includes(input.value)})}
+function bindTaskTypePreset(form){if(!form||form.dataset.typePresetBound)return;form.dataset.typePresetBound='true';const typeField=form.elements.taskType;if(!typeField)return;typeField.addEventListener('change',()=>applyTaskTypePreset(form,typeField.value));applyTaskTypePreset(form,typeField.value)}
+new MutationObserver(()=>document.querySelectorAll('#taskModalForm,#roleTaskForm').forEach(bindTaskTypePreset)).observe(document.body,{childList:true,subtree:true});
 function levelRank(v){return TASK_LEVELS.indexOf(v)<0?0:TASK_LEVELS.indexOf(v)}
 function recommend(t){const required=(t.requiredSkills||[]).filter(Boolean);return data.members.map(m=>{const typeMatch=(m.types||[]).includes(t.taskType)?30:0;const skillHits=required.filter(s=>(m.skills||[]).includes(s)).length;const skillScore=required.length?Math.round(skillHits/required.length*30):15;const levelScore=levelRank(m.level)>=levelRank(t.requiredLevel||t.difficulty)?20:5;const expScore=m.experience>=(t.minExperience||0)?10:Math.max(0,10-Math.round(((t.minExperience||0)-m.experience)*2));const capacityScore=Math.max(0,10-Math.round(m.workload/10));const score=Math.max(0,Math.round(typeMatch+skillScore+levelScore+expScore+capacityScore));const eligible=m.workload<(m.maxWorkload||85)&&levelRank(m.level)>=Math.max(0,levelRank(t.requiredLevel||'사원')-1);return {...m,score,eligible,breakdown:{type:typeMatch,skills:skillScore,level:levelScore,experience:expScore,capacity:capacityScore},skillHits}}).sort((a,b)=>(Number(b.eligible)-Number(a.eligible))||b.score-a.score)}
 function bestCandidate(t){return recommend(t).find(m=>m.eligible)||recommend(t)[0]}
