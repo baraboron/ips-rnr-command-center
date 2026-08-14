@@ -389,7 +389,7 @@ function durationDayValue(hours){const days=(Number(hours)||0)/8;return Number.i
 function decorateDurationDisplays(){
   document.querySelectorAll('.priority,.detail-hours strong').forEach(node=>{node.textContent=node.textContent.replace(/(\d+(?:\.\d+)?)h\b/g,(_,hours)=>`${durationDayValue(hours)} Day`)})
 }
-function decorateTaskDifficultyDisplays(){document.querySelectorAll('.task-tile').forEach(tile=>{const title=tile.querySelector('h3')?.textContent.trim(),task=data.tasks.find(item=>item.title===title),priority=tile.querySelector('.priority');if(!task||!priority)return;const difficulty=normalizeDifficulty(task.difficulty);if(!priority.dataset.difficultyDecorated){priority.textContent=`${difficulty} · ${priority.textContent}`;priority.dataset.difficultyDecorated='true'}})}
+function decorateTaskDifficultyDisplays(){document.querySelectorAll('.task-tile').forEach(tile=>{const title=tile.querySelector('h3')?.textContent.trim(),task=data.tasks.find(item=>item.title===title),priority=tile.querySelector('.priority');if(!task||!priority||priority.dataset.difficultyDecorated)return;const difficulty=normalizeDifficulty(task.difficulty),duration=priority.textContent.match(/(\d+(?:\.\d+)?)\s*Day/)?.[1]||'';priority.innerHTML=`<span class="task-priority-type">${esc(task.taskType||'업무')}</span><span class="task-priority-badge">${esc(difficulty)}</span><span class="task-priority-level">${esc(task.requiredLevel||'')}</span>${duration?`<span class="task-priority-duration">${duration}일</span>`:''}`;priority.dataset.difficultyDecorated='true'})}
 const baseDurationRender=render;
 render=function(){baseDurationRender();decorateDurationDisplays();decorateTaskDifficultyDisplays()};
 const baseDurationTaskDetail=openTaskDetail;
