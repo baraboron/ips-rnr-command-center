@@ -1,0 +1,5 @@
+{
+  "schemaVersion": 1,
+  "apiUrl": "https://wonik90-telemetry-api.azurewebsites.net/api/v1/records",
+  "teamTokenSha256": "666abb1211beb8494f15613284ffa61db02a36e7d7b381c1bb57e3c4f513ea3f"
+}

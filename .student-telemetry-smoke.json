@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "runtime": "node-http",
+  "entry": "server.mjs",
+  "required_env": ["OPENAI_API_KEY"],
+  "probes": [
+    {
+      "name": "application_bootstrap",
+      "method": "GET",
+      "path": "/api/bootstrap",
+      "expected_status": [204],
+      "expected_events": [
+        {
+          "event_type": "app_open",
+          "count": 1,
+          "payload": {"source": "app_bootstrap"}
+        }
+      ]
+    },
+    {
+      "name": "department_report",
+      "method": "POST",
+      "path": "/api/ai",
+      "body": {"action": "department_report", "input": {"focus": "all"}},
+      "expected_status": [200],
+      "expected_events": [
+        {
+          "event_type": "user_action",
+          "count": 1,
+          "payload": {"action": "generate_department_report", "success": true}
+        },
+        {
+          "event_type": "ai_call",
+          "count": 1,
+          "payload": {"provider": "openai", "model": "gpt-5.6-luna", "success": true}
+        }
+      ]
+    },
+    {
+      "name": "complete_task_description",
+      "method": "POST",
+      "path": "/api/ai",
+      "body": {"action": "complete_task", "input": {"title": "synthetic task", "description": "synthetic description", "taskType": "education"}},
+      "expected_status": [200],
+      "expected_events": [
+        {
+          "event_type": "user_action",
+          "count": 1,
+          "payload": {"action": "complete_task_description", "success": true}
+        },
+        {
+          "event_type": "ai_call",
+          "count": 1,
+          "payload": {"provider": "openai", "model": "gpt-5.6-luna", "success": true}
+        }
+      ]
+    },
+    {
+      "name": "work_briefing",
+      "method": "POST",
+      "path": "/api/ai",
+      "body": {"action": "briefing", "input": {"period": "weekly"}},
+      "expected_status": [200],
+      "expected_events": [
+        {
+          "event_type": "user_action",
+          "count": 1,
+          "payload": {"action": "generate_work_briefing", "success": true}
+        },
+        {
+          "event_type": "ai_call",
+          "count": 1,
+          "payload": {"provider": "openai", "model": "gpt-5.6-luna", "success": true}
+        }
+      ]
+    }
+  ],
+  "external_mocks": [
+    {
+      "name": "openai_responses_success",
+      "method": "POST",
+      "url": "https://api.openai.com/v1/responses",
+      "status": 200,
+      "headers": {"content-type": "application/json"},
+      "json": {"output_text": "# Synthetic runtime check\n- synthetic result"}
+    }
+  ]
+}

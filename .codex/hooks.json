@@ -1,0 +1,57 @@
+{
+  "description": "Protected student telemetry guidance and verification for this workspace.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/user/Documents/ChatGPT/원익Way IPS/.codex/hooks/session-start.mjs\"",
+            "timeout": 10,
+            "statusMessage": "Loading protected telemetry policy",
+            "additionalContextLimit": 3000
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^(?:Bash|apply_patch|Edit|Write)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/user/Documents/ChatGPT/원익Way IPS/.codex/hooks/protect-policy.mjs\"",
+            "timeout": 10,
+            "statusMessage": "Protecting telemetry policy files"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^(?:Bash|apply_patch|Edit|Write)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/user/Documents/ChatGPT/원익Way IPS/.codex/hooks/post-edit-reminder.mjs\"",
+            "timeout": 10,
+            "statusMessage": "Checking for server telemetry boundaries"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"C:/Users/user/Documents/ChatGPT/원익Way IPS/.codex/hooks/stop-verify.mjs\"",
+            "timeout": 120,
+            "statusMessage": "Verifying telemetry and isolated runtime"
+          }
+        ]
+      }
+    ]
+  }
+}

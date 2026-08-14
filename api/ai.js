@@ -55,24 +55,41 @@ function outputText(response) {
   return (response?.output || []).flatMap(item => item.content || []).map(part => part.text || '').join('\n').trim();
 }
 
+const ACTION_CODES={department_report:'generate_department_report',complete_task:'complete_task_description',briefing:'generate_work_briefing'};
+const {logUserAction, logAiCall}=require('../lib/server/telemetry.server.cjs');
+async function logAction(input){try{await logUserAction(input)}catch{} }
+async function logProvider(input){try{await logAiCall(input)}catch{} }
+
 async function handler(req, res) {
   if (req.method !== 'POST') return json(res, 405, {error:'POST 요청만 허용됩니다.'});
   if (!process.env.OPENAI_API_KEY) return json(res, 503, {error:'OPENAI_API_KEY가 서버 환경변수에 없습니다.'});
+  let actionCode;
+  let startedAt=Date.now();
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
     const action = String(body.action || '');
     const input = body.input || {};
-    const response = await fetch(OPENAI_URL, {
+    actionCode=ACTION_CODES[action];
+    if(!actionCode)return json(res,400,{error:'Unsupported AI action.'});
+    startedAt=Date.now();
+    const model=process.env.OPENAI_MODEL||'gpt-5.6-luna';
+    let providerSuccess=false,providerErrorCode='request_error';
+    let response;try{response = await fetch(OPENAI_URL, {
       method:'POST',
       headers:{'Content-Type':'application/json',Authorization:`Bearer ${process.env.OPENAI_API_KEY}`},
       body:JSON.stringify({model:process.env.OPENAI_MODEL || 'gpt-5.6-luna',input:promptFor(action,input),store:false})
     });
     const result = await response.json();
+    if(!response.ok){providerErrorCode=response.status===429?'rate_limited':response.status>=500?'provider_5xx':'provider_error';await logAction({action:actionCode,success:false,latencyMs:Date.now()-startedAt})}
     if (!response.ok) return json(res, response.status, {error:result?.error?.message || 'OpenAI API 호출에 실패했습니다.'});
+    providerSuccess=true;
+    await logAction({action:actionCode,success:true,latencyMs:Date.now()-startedAt});
     return json(res, 200, {text:outputText(result),model:result.model});
+    }finally{await logProvider({provider:'openai',model,success:providerSuccess,latencyMs:Date.now()-startedAt,...(providerSuccess?{}:{errorCode:providerErrorCode})})}
   } catch (error) {
+    if(actionCode)await logAction({action:actionCode,success:false,latencyMs:Date.now()-startedAt});
     return json(res, 400, {error:error.message || 'AI 요청을 처리하지 못했습니다.'});
   }
 }
 
-module.exports = handler;
+module.exports=handler;

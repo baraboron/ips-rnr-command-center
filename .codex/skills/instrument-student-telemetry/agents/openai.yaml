@@ -1,0 +1,4 @@
+interface:
+  display_name: "Instrument Student Telemetry"
+  short_description: "Map any app's real behavior to safe telemetry"
+  default_prompt: "Use $instrument-student-telemetry to inspect this app, map its real server boundaries, add every applicable telemetry category without inventing AI calls, maintain synthetic isolated runtime probes for the selected event map, and fix every protected verifier failure."

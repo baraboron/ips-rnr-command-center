@@ -1,0 +1,9 @@
+{
+  "name": "wonikway-ips",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node server.mjs",
+    "verify:telemetry": "node .codex/hooks/verify-workspace.mjs"
+  }
+}

@@ -5,6 +5,8 @@
  */
 (function(){
   const SESSION_KEY='rr-auth-session';
+  async function sendTelemetryBootstrap(){try{if(sessionStorage.getItem('rr-telemetry-app-open')==='sent')return;const response=await fetch('/api/bootstrap',{method:'GET',credentials:'same-origin'});if(response.ok)sessionStorage.setItem('rr-telemetry-app-open','sent')}catch{}}
+  sendTelemetryBootstrap();
   const ROLE_LABELS={admin:'시스템 관리자',leader:'팀장',member:'팀원'};
   // 인사팀장만 팀장 권한을 가지며, 그룹 책임자는 그룹장 업무 범위로 처리한다.
   const ROLE_BY_MEMBER_ID={1:'leader'};
