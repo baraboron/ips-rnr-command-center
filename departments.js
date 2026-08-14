@@ -132,7 +132,7 @@
     return source.filter(task=>!baseIds.has(task.id)&&(task.collaborators||[]).some(value=>[...names].some(name=>String(value).trim()===name||String(value).includes(name))));
   }
   function collaborationTaskPanel(info,baseTasks){
-    const tasks=collaborationTasks(info,baseTasks);if(!tasks.length)return '';
+    if(!info?.leader)info={...info,leader:{name:'소속 그룹'}};const tasks=collaborationTasks(info,baseTasks);if(!tasks.length)return '';
     return `<section class="panel collaboration-work-panel"><div class="panel-header"><div><div class="panel-title">협업부서 지정 업무</div><div class="panel-desc">${esc(info.leader.name)} 조직이 협업부서로 지정된 업무입니다. 기존 권한 범위와 동일하게 확인·관리합니다.</div></div><span class="panel-pill">COLLABORATION · ${tasks.length}건</span></div><div class="task-grid collaboration-task-grid">${tasks.map(taskCard).join('')}</div></section>`;
   }
   const baseRoleTasksView=roleTasksView;
