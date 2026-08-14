@@ -8,17 +8,25 @@
   const ROLE_LABELS={admin:'시스템 관리자',leader:'팀장',member:'팀원'};
   // 인사팀장만 팀장 권한을 가지며, 그룹 책임자는 그룹장 업무 범위로 처리한다.
   const ROLE_BY_MEMBER_ID={1:'leader'};
+  ROLE_LABELS.groupLeader='그룹장';
+  function roleForMember(member){
+    if(!member)return 'member';
+    const managedDepartment=(data.departments||[]).find(department=>department.manager===member.name);
+    if(managedDepartment?.type==='그룹')return 'groupLeader';
+    if(managedDepartment?.type==='팀'||ROLE_BY_MEMBER_ID[member.id]==='leader')return 'leader';
+    return 'member';
+  }
   const authProvider={
     async signIn(memberId){
       const member=data.members.find(m=>String(m.id)===String(memberId));
       if(!member)throw new Error('사용자를 찾을 수 없습니다.');
-      const role=ROLE_BY_MEMBER_ID[member.id]||'member';
+      const role=roleForMember(member);
       return {memberId:member.id,memberName:member.name,role,provider:'local',signedInAt:new Date().toISOString()};
     },
     signOut(){localStorage.removeItem(SESSION_KEY)}
   };
   function session(){try{return JSON.parse(localStorage.getItem(SESSION_KEY)||'null')}catch{return null}}
-  function memberRole(memberId){return ROLE_BY_MEMBER_ID[memberId]||'member'}
+  function memberRole(memberId){return roleForMember(data.members.find(member=>String(member.id)===String(memberId)))}
   function roleLabel(role){return ROLE_LABELS[role]||ROLE_LABELS.member}
   function ensureLayer(){
     if(document.querySelector('.auth-layer'))return;
@@ -30,6 +38,8 @@
     layer.querySelector('#authForm').addEventListener('submit',async event=>{event.preventDefault();const form=new FormData(event.currentTarget);const next=await authProvider.signIn(form.get('memberId'));applySession(next);});
   }
   function applySession(next){
+    const member=data.members.find(item=>String(item.id)===String(next.memberId));
+    if(member)next={...next,memberName:member.name,role:roleForMember(member)};
     localStorage.setItem(SESSION_KEY,JSON.stringify(next));
     data.currentUser=next.memberName;data.currentUserRole=next.role;save();
     window.RR_CURRENT_USER=next.memberName;window.RR_IS_ADMIN=next.role==='admin';
@@ -37,7 +47,7 @@
     applyRoleNavigation(next.role);updateUserChrome(next);window.render();
   }
   function applyRoleNavigation(role){
-    document.querySelectorAll('.nav-item').forEach(item=>{const view=item.dataset.view;const allowed=role==='admin'||(role==='leader'?view!=='admin':!['admin','org'].includes(view));item.hidden=!allowed});
+    document.querySelectorAll('.nav-item').forEach(item=>{const view=item.dataset.view;const leaderRole=role==='leader'||role==='groupLeader';const allowed=role==='admin'||(leaderRole?view!=='admin':!['admin','org'].includes(view));item.hidden=!allowed});
     if(role!=='admin'&&current==='admin')window.go('dashboard');
   }
   function updateUserChrome(current){
