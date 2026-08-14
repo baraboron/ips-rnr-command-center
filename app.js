@@ -307,3 +307,43 @@ function applyDayDurationInputs(){
 team=scopedTeam;
 dashboard=scopedCompactDashboard;
 dashboardExtras=function(){return '';};
+
+// KPI는 별도 입력 없이 업무·만족도·피드백 데이터에서 자동 산출한다.
+const AUTO_KPI_DEFINITIONS=[
+  {key:'assignmentRate',name:'담당 배정률',unit:'%',target:100,direction:'high',desc:'전체 업무 중 담당자가 지정된 비율'},
+  {key:'completionRate',name:'업무 완료율',unit:'%',target:80,direction:'high',desc:'전체 업무 중 완료 상태인 비율'},
+  {key:'onTimeRate',name:'기한 준수율',unit:'%',target:90,direction:'high',desc:'완료 업무 중 기한 내 완료한 비율'},
+  {key:'unassignedRate',name:'미배정 비율',unit:'%',target:10,direction:'low',desc:'담당자가 없는 업무 비율'},
+  {key:'blockedRate',name:'막힘 업무 비율',unit:'%',target:5,direction:'low',desc:'현재 막힘 상태인 업무 비율'},
+  {key:'avgWorkload',name:'평균 업무부하',unit:'%',target:70,direction:'low',desc:'구성원별 자동 계산 업무부하 평균'},
+  {key:'overloadedMembers',name:'과부하 구성원',unit:'명',target:0,direction:'low',desc:'업무부하 80% 이상 구성원 수'},
+  {key:'satisfactionScore',name:'업무만족도',unit:'점',target:3.5,direction:'high',desc:'적합성·업무량 응답을 5점 기준으로 환산'},
+  {key:'satisfactionRate',name:'만족도 응답률',unit:'%',target:80,direction:'high',desc:'완료 업무 중 만족도 응답이 등록된 비율'},
+  {key:'feedbackRate',name:'리더 피드백률',unit:'%',target:80,direction:'high',desc:'완료 업무 중 리더 피드백이 등록된 비율'},
+  {key:'dataCompleteness',name:'업무정보 완성도',unit:'%',target:90,direction:'high',desc:'제목·설명·기한·필수역량·담당자 입력 충족률'},
+  {key:'multiAssigneeRate',name:'공동 담당 업무 비율',unit:'%',target:20,direction:'neutral',desc:'복수 담당자로 운영되는 업무 비율'}
+];
+
+function autoKpiPercent(value,total){return total?Math.round(value/total*100):0}
+function autoKpiDateDiff(start,end){if(!start||!end)return null;const a=new Date(start),b=new Date(end),days=Math.round((b-a)/86400000);return Number.isFinite(days)?Math.max(0,days):null}
+function autoKpiMetrics(){
+  const scope=typeof dashboardTaskScope==='function'?dashboardTaskScope():{tasks:data.tasks,members:data.members,label:'전체'},tasks=Array.isArray(scope.tasks)?scope.tasks:[],members=Array.isArray(scope.members)?scope.members:[],memberNames=new Set(members.map(m=>m.name)),responses=(Array.isArray(data.satisfaction)?data.satisfaction:[]).filter(r=>memberNames.has(r.owner));
+  const total=tasks.length,assigned=tasks.filter(t=>taskAssigneeNames(t).length>0||t.owner&&t.owner!=='미정'),done=tasks.filter(t=>t.status==='done'),unassigned=tasks.filter(t=>!taskAssigneeNames(t).length&&(!t.owner||t.owner==='미정')),blocked=tasks.filter(t=>t.status==='blocked');
+  const datedDone=done.filter(t=>t.due&&(t.completedAt||t.completedDate||t.updatedAt||t.createdAt));
+  const onTime=datedDone.filter(t=>(t.completedAt||t.completedDate||t.updatedAt||t.createdAt)<=t.due);
+  const memberLoads=members.map(m=>calculatedWorkload(m));
+  const relevantResponses=responses.filter(r=>r.owner&&members.some(m=>m.name===r.owner));
+  const fit={적절:5,보통:3,어려움:1},load={적정:5,여유:4,과다:1};
+  const scores=relevantResponses.map(r=>((fit[r.fit]||3)+(load[r.load]||3))/2);
+  const feedbackDone=done.filter(t=>Array.isArray(t.leaderFeedback)&&t.leaderFeedback.length>0);
+  const completeFields=tasks.reduce((sum,t)=>sum+['title','description','due'].filter(key=>String(t[key]||'').trim()).length+(t.requiredSkills?.length?1:0)+(taskAssigneeNames(t).length?1:0),0);
+  const dataFieldTotal=total*5;
+  const multi=tasks.filter(t=>taskAssigneeNames(t).length>1);
+  return {assignmentRate:autoKpiPercent(assigned.length,total),completionRate:autoKpiPercent(done.length,total),onTimeRate:autoKpiPercent(onTime.length,datedDone.length),unassignedRate:autoKpiPercent(unassigned.length,total),blockedRate:autoKpiPercent(blocked.length,total),avgWorkload:memberLoads.length?Math.round(memberLoads.reduce((a,v)=>a+v,0)/memberLoads.length):0,overloadedMembers:memberLoads.filter(v=>v>=80).length,satisfactionScore:scores.length?Math.round(scores.reduce((a,v)=>a+v,0)/scores.length*10)/10:0,satisfactionRate:autoKpiPercent(relevantResponses.length,done.length),feedbackRate:autoKpiPercent(feedbackDone.length,done.length),dataCompleteness:dataFieldTotal?Math.round(completeFields/dataFieldTotal*100):0,multiAssigneeRate:autoKpiPercent(multi.length,total),responseCount:relevantResponses.length,feedbackCount:feedbackDone.length,total,doneCount:done.length,datedDoneCount:datedDone.length};
+}
+function autoKpiStatus(def,value){if(def.direction==='neutral')return '참고';return def.direction==='high'?(value>=def.target?'목표 달성':'관리 필요'):(value<=def.target?'목표 달성':'관리 필요')}
+function autoKpiDisplay(value,unit){return `${value}${unit}`}
+function autoKpiDetailRows(metrics){return AUTO_KPI_DEFINITIONS.map(def=>{const value=metrics[def.key],status=autoKpiStatus(def,value),tone=status==='목표 달성'?'hit':status==='관리 필요'?'active':'pending';return `<div class="auto-kpi-row"><div><strong>${def.name}</strong><small>${def.desc}</small></div><b class="auto-kpi-value">${autoKpiDisplay(value,def.unit)}</b><span class="auto-kpi-status ${tone}">${status}</span></div>`}).join('')}
+records=function(){const metrics=autoKpiMetrics();const highlights=AUTO_KPI_DEFINITIONS.slice(0,6);return `<section class="view"><div class="view-heading"><div><p class="eyebrow">AUTO KPI CONTROL CENTER</p><h1>KPI 현황</h1><p class="subtitle">업무 등록·배정·진행·완료·만족도 데이터를 기준으로 자동 산출됩니다. 별도 KPI 입력이 필요하지 않습니다.</p></div><button class="btn secondary" onclick="downloadCSV()">자동 산출 CSV</button></div><div class="primary-kpi-grid">${highlights.map(def=>{const value=metrics[def.key],status=autoKpiStatus(def,value),tone=status==='목표 달성'?'hit':status==='관리 필요'?'active':'pending';return `<article class="primary-kpi-card ${tone}"><div class="primary-kpi-head"><span>${def.name}</span><b>${status}</b></div><div class="primary-kpi-value">${autoKpiDisplay(value,def.unit)}</div><div class="primary-kpi-target">기준 ${def.direction==='low'?'≤':'≥'} ${def.target}${def.unit} · ${def.desc}</div><div class="primary-progress"><span style="width:${Math.min(100,def.direction==='low'?Math.max(0,100-value/Math.max(def.target,1)*100):value/Math.max(def.target,1)*100)}%"></span></div></article>`}).join('')}</div><div class="panel auto-kpi-panel"><div class="panel-header"><div><div class="panel-title">세부 자동 산출 항목</div><div class="panel-desc">현재 저장된 원천 데이터에서 실시간으로 다시 계산합니다. 전체 ${metrics.total}건 · 완료 ${metrics.doneCount}건 · 만족도 응답 ${metrics.responseCount}건 · 피드백 ${metrics.feedbackCount}건</div></div><span class="panel-pill">LIVE CALCULATION</span></div><div class="auto-kpi-list">${autoKpiDetailRows(metrics)}</div></div></section>`}
+downloadCSV=function(){const metrics=autoKpiMetrics(),rows=[['KPI 항목','자동 산출값','단위','기준','설명'],...AUTO_KPI_DEFINITIONS.map(def=>[def.name,metrics[def.key],def.unit,`${def.direction==='low'?'≤':'≥'} ${def.target}`,def.desc])];const csv='\ufeff'+rows.map(row=>row.map(value=>'"'+String(value).replaceAll('"','""')+'"').join(',')).join('\n');const anchor=document.createElement('a');anchor.href=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));anchor.download='auto-kpi-metrics.csv';anchor.click();toast('자동 산출 KPI CSV를 다운로드합니다.');}
+if(typeof render==='function')render();
