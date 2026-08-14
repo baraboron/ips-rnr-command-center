@@ -59,7 +59,7 @@
     const member=data.members.find(m=>m.name===user);
     const managed=data.departments.find(d=>d.manager===user);
     const team=managed?.type==='팀'?managed:null;
-    const group=managed?.type==='그룹'?managed:(member?.departmentId?dept(member.departmentId):null);
+    const group=managed?.type==='그룹'?managed:null;
     if(team){
       const teamIds=new Set(descendants(team.id).map(d=>d.id));
       const teamMembers=new Set(data.members.filter(m=>teamIds.has(m.departmentId)).map(m=>m.name));
@@ -71,7 +71,8 @@
       const tasks=data.tasks.filter(t=>t.targetDepartmentId===group.id||taskAssigneeNames(t).some(n=>groupMembers.has(n)));
       return {tasks,members:data.members.filter(m=>m.departmentId===group.id),label:group.name};
     }
-    return {tasks:data.tasks,members:data.members,label:'전체'};
+    const ownTasks=data.tasks.filter(t=>taskAssigneeNames(t).includes(user)||t.createdBy===user);
+    return {tasks:ownTasks,members:member?[member]:[],label:'내 업무'};
   };
   window.getLeaderSatisfactionScope=function(){
     const user=currentUserName();
