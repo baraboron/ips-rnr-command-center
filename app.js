@@ -367,4 +367,26 @@ const baseDurationRender=render;
 render=function(){baseDurationRender();decorateDurationDisplays()};
 const baseDurationTaskDetail=openTaskDetail;
 openTaskDetail=function(taskId){baseDurationTaskDetail(taskId);decorateDurationDisplays()};
+
+function enhanceMemberSearch(){
+  document.querySelectorAll('#roleTaskForm select[name="assignmentTarget"]').forEach(select=>{
+    if(select.dataset.searchBound)return;
+    select.dataset.searchBound='true';
+    const wrap=document.createElement('div');wrap.className='member-search-wrap';
+    const input=document.createElement('input');input.type='search';input.className='member-search-input';input.placeholder='이름 또는 직급으로 검색';input.autocomplete='off';input.required=select.required;
+    const results=document.createElement('div');results.className='member-search-results';
+    select.required=false;select.hidden=true;select.parentNode.insertBefore(wrap,select);wrap.append(input,results);
+    const options=[...select.options].filter(option=>option.value);
+    const renderResults=filter=>{const query=String(filter||'').trim().toLowerCase();results.innerHTML='';options.filter(option=>!query||option.textContent.toLowerCase().includes(query)).forEach(option=>{const button=document.createElement('button');button.type='button';button.className='member-search-option';button.textContent=option.textContent;button.onclick=()=>{select.value=option.value;input.value=option.textContent;results.hidden=true;input.setCustomValidity('');select.dispatchEvent(new Event('change',{bubbles:true}))};results.appendChild(button)});results.hidden=!options.length||!query&&!input.matches(':focus');if(query)results.hidden=false};
+    input.addEventListener('focus',()=>renderResults(input.value));input.addEventListener('input',()=>{select.value='';input.setCustomValidity(input.value?'검색 결과에서 담당자를 선택해주세요.':'담당자를 선택해주세요.');renderResults(input.value)});document.addEventListener('click',event=>{if(!wrap.contains(event.target))results.hidden=true});renderResults('');
+  });
+  document.querySelectorAll('#manualAssignForm').forEach(form=>{
+    if(form.dataset.searchBound)return;
+    form.dataset.searchBound='true';
+    const input=document.createElement('input');input.type='search';input.className='member-search-input';input.placeholder='이름, 직급, 역량으로 검색';input.autocomplete='off';form.querySelector('.assign-candidates')?.before(input);
+    input.addEventListener('input',()=>{const query=input.value.trim().toLowerCase();form.querySelectorAll('.assign-candidate').forEach(label=>{label.hidden=query&&!label.textContent.toLowerCase().includes(query)})});
+  });
+}
+if(!document.getElementById('memberSearchStyles')){const style=document.createElement('style');style.id='memberSearchStyles';style.textContent='.member-search-wrap{position:relative}.member-search-input{width:100%;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink);padding:10px 11px;font:inherit;font-size:11px}.member-search-input:focus{outline:2px solid rgba(15,76,129,.14);border-color:var(--blue)}.member-search-results{position:absolute;z-index:20;left:0;right:0;top:calc(100% + 4px);display:grid;gap:3px;max-height:180px;overflow:auto;padding:5px;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 10px 24px rgba(15,76,129,.12)}.member-search-results[hidden]{display:none}.member-search-option{border:0;border-radius:6px;background:#fff;color:var(--ink);padding:8px 9px;text-align:left;font:inherit;font-size:11px;cursor:pointer}.member-search-option:hover{background:#edf5f9;color:var(--blue)}#manualAssignForm>.member-search-input{margin-bottom:9px}.assign-candidate[hidden]{display:none}';document.head.appendChild(style)}
+const memberSearchObserver=new MutationObserver(enhanceMemberSearch);memberSearchObserver.observe(document.body,{childList:true,subtree:true});enhanceMemberSearch();
 render();
